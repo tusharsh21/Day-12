@@ -38,9 +38,10 @@
         const ctx = canvas.getContext("2d");
 
         const points = [
-            { x: 150, y: 50 }, { x: 250, y: 50 }, { x: 100, y: 150 },
-            { x: 300, y: 150 }, { x: 100, y: 300 }, { x: 300, y: 300 },
-            { x: 150, y: 400 }, { x: 250, y: 400 }
+            { x: 150, y: 50, num: 1 }, { x: 250, y: 50, num: 2 }, 
+            { x: 100, y: 150, num: 3 }, { x: 300, y: 150, num: 4 },
+            { x: 100, y: 300, num: 5 }, { x: 300, y: 300, num: 6 }, 
+            { x: 150, y: 400, num: 7 }, { x: 250, y: 400, num: 8 }
         ];
 
         let clickedPoints = [];
@@ -48,10 +49,13 @@
         function drawPoints() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "white";
+            ctx.font = "16px Arial";
+
             points.forEach(point => {
                 ctx.beginPath();
                 ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.fillText(point.num, point.x - 10, point.y - 10);
             });
 
             ctx.beginPath();
