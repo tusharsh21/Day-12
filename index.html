@@ -23,6 +23,7 @@
       background: #1e293b;
       border: 2px solid #94a3b8;
       border-radius: 12px;
+      touch-action: none;
     }
     #message {
       margin-top: 20px;
@@ -52,7 +53,8 @@
     ];
 
     let drawn = [];
-    let current = 0;
+    let expectedOrder = [0, 1, 4, 6, 5, 7, 2, 3];
+    let currentIndex = 0;
 
     function drawDots() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -86,18 +88,18 @@
         const dx = x - points[i].x;
         const dy = y - points[i].y;
         if (dx * dx + dy * dy < 100) {
-          if (i === current) {
+          if (i === expectedOrder[currentIndex]) {
             if (drawn.length > 0) {
               connectPoints(drawn[drawn.length - 1], i);
             }
             drawn.push(i);
-            current++;
+            currentIndex++;
 
-            if (drawn.join() === '0,1,2,3,4,5,6,7') {
+            if (currentIndex === expectedOrder.length) {
               document.getElementById('message').style.display = 'block';
             }
-            break;
           }
+          break;
         }
       }
     });
