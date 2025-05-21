@@ -1,114 +1,174 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connect the Dots - Gemini Symbol</title>
-    <style>
-        body {
-            text-align: center;
-            font-family: Arial, sans-serif;
-            background-color: #222;
-            color: white;
-        }
-        canvas {
-            border: 2px solid white;
-            background-color: #444;
-        }
-        button {
-            padding: 10px 15px;
-            font-size: 16px;
-            margin-top: 10px;
-            cursor: pointer;
-            border: none;
-            background-color: #ffcc00;
-            color: #222;
-            font-weight: bold;
-        }
-        #message {
-            font-size: 20px;
-            font-weight: bold;
-            margin-top: 10px;
-            display: none;
-            color: #ffcc00;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Connect the Dots - Gemini Symbol</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+      background-color: #222;
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }
+    canvas {
+      border: 2px solid white;
+      background-color: #444;
+      margin-top: 20px;
+    }
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+      border: none;
+      background-color: #ffcc00;
+      color: #222;
+      font-weight: bold;
+    }
+    #message {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 15px;
+      display: none;
+      color: #ffcc00;
+    }
+  </style>
 </head>
 <body>
-    <h1>Connect the Dots: Gemini Symbol</h1>
-    <p>Click the dots **in order** to reveal the Gemini symbol. Use "Undo" to remove the last connection.</p>
-    <canvas id="gameCanvas" width="500" height="500"></canvas>
-    <br>
-    <button onclick="undoLast()">Undo Last Move</button>
-    <p id="message">🎉 Congratulations! You've completed the Gemini symbol! 🎉</p>
-    <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        const message = document.getElementById("message");
+  <h1>Connect the Dots: Gemini Symbol</h1>
+  <p>
+    Click on a dot to select it. The selected dot is highlighted in cyan.
+    Then click another dot to connect them. Use "Undo" to remove the last connection.
+  </p>
+  <canvas id="gameCanvas" width="500" height="500"></canvas>
+  <br>
+  <button onclick="undoLast()">Undo Last Move</button>
+  <p id="message">🎉 Congratulations! You've completed the Gemini symbol! 🎉</p>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const message = document.getElementById("message");
 
-        const points = [
-            { x: 120, y: 50, num: 1 }, { x: 280, y: 50, num: 2 }, 
-            { x: 160, y: 150, num: 3 }, { x: 240, y: 150, num: 4 },
-            { x: 160, y: 250, num: 5 }, { x: 240, y: 250, num: 6 }, 
-            { x: 120, y: 350, num: 7 }, { x: 280, y: 350, num: 8 }
-        ];
+    // Define dot positions.
+    // Dots 1,2 and 7,8 are placed with wider horizontal spacing.
+    // Dots 3,4 and 5,6 are positioned more centrally.
+    const points = [
+      { x: 50,  y: 50,  num: 1 },  // top left
+      { x: 450, y: 50,  num: 2 },  // top right
+      { x: 200, y: 120, num: 3 },  // mid top-left
+      { x: 300, y: 120, num: 4 },  // mid top-right
+      { x: 200, y: 280, num: 5 },  // mid bottom-left
+      { x: 300, y: 280, num: 6 },  // mid bottom-right
+      { x: 50,  y: 350, num: 7 },  // bottom left
+      { x: 450, y: 350, num: 8 }   // bottom right
+    ];
 
-        let clickedPoints = [];
+    // Global state: the index of the currently selected dot (if any)
+    // and the list of drawn connections (each an object with properties "from" and "to" holding indices into points[]).
+    let selectedDotIndex = null;
+    const connections = [];
 
-        function drawPoints() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "white";
-            ctx.font = "16px Arial";
+    // Draw the entire canvas.
+    function draw() {
+      // Clear the canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            points.forEach(point => {
-                ctx.beginPath();
-                ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillText(point.num, point.x - 10, point.y - 10);
-            });
+      // Draw all the connections (lines)
+      ctx.strokeStyle = "#ffcc00";
+      ctx.lineWidth = 3;
+      connections.forEach(conn => {
+        const start = points[conn.from];
+        const end = points[conn.to];
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+      });
 
-            ctx.beginPath();
-            ctx.strokeStyle = "#ffcc00";
-            ctx.lineWidth = 3;
-            clickedPoints.forEach((point, index) => {
-                if (index === 0) {
-                    ctx.moveTo(point.x, point.y);
-                } else {
-                    ctx.lineTo(point.x, point.y);
-                }
-            });
-            ctx.stroke();
-
-            if (clickedPoints.length === points.length) {
-                message.style.display = "block"; // Show the congratulations message
-            }
+      // Draw each dot along with its number label.
+      points.forEach((point, index) => {
+        ctx.beginPath();
+        // If this dot is selected, draw it larger and in cyan.
+        if (selectedDotIndex === index) {
+          ctx.arc(point.x, point.y, 10, 0, 2 * Math.PI);
+          ctx.fillStyle = "cyan";
+        } else {
+          ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
+          ctx.fillStyle = "white";
         }
+        ctx.fill();
 
-        canvas.addEventListener("click", (event) => {
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = event.clientX - rect.left;
-            const mouseY = event.clientY - rect.top;
+        // Draw the dot's number.
+        ctx.fillStyle = "white";
+        ctx.font = "16px Arial";
+        ctx.fillText(point.num, point.x - 10, point.y - 10);
+      });
 
-            const nextIndex = clickedPoints.length;
+      // Check if every dot has been used in at least one connection.
+      checkCompletion();
+    }
 
-            if (nextIndex < points.length) {
-                const nextPoint = points[nextIndex];
-                if (Math.abs(mouseX - nextPoint.x) < 10 && Math.abs(mouseY - nextPoint.y) < 10) {
-                    clickedPoints.push(nextPoint);
-                    drawPoints();
-                }
+    // When the canvas is clicked, determine if a dot was clicked.
+    canvas.addEventListener("click", function(event) {
+      const rect = canvas.getBoundingClientRect();
+      const clickX = event.clientX - rect.left;
+      const clickY = event.clientY - rect.top;
+
+      // Loop through all points to see if click is within 10px of any dot.
+      for (let i = 0; i < points.length; i++) {
+        const dx = clickX - points[i].x;
+        const dy = clickY - points[i].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance < 10) {
+          // If no dot is currently selected, set this dot as selected.
+          if (selectedDotIndex === null) {
+            selectedDotIndex = i;
+          } else {
+            // If the same dot is clicked again, deselect it.
+            if (selectedDotIndex === i) {
+              selectedDotIndex = null;
+            } else {
+              // Otherwise, add a connection from the selected dot to this one and clear the selection.
+              connections.push({ from: selectedDotIndex, to: i });
+              selectedDotIndex = null;
             }
-        });
-
-        function undoLast() {
-            if (clickedPoints.length > 0) {
-                clickedPoints.pop();
-                message.style.display = "none"; // Hide message if undone
-                drawPoints();
-            }
+          }
+          draw();
+          return; // Exit after processing the click.
         }
+      }
+    });
 
-        drawPoints();
-    </script>
+    // Remove the last drawn connection or deselect the active dot.
+    function undoLast() {
+      if (connections.length > 0) {
+        connections.pop();
+      } else if (selectedDotIndex !== null) {
+        selectedDotIndex = null;
+      }
+      draw();
+    }
+
+    // Check if every dot has been involved in at least one connection;
+    // if so, show the congratulatory message.
+    function checkCompletion() {
+      const connectedDots = new Set();
+      connections.forEach(conn => {
+        connectedDots.add(conn.from);
+        connectedDots.add(conn.to);
+      });
+      if (connectedDots.size === points.length) {
+        message.style.display = "block";
+      } else {
+        message.style.display = "none";
+      }
+    }
+
+    // Initial draw.
+    draw();
+  </script>
 </body>
 </html>
