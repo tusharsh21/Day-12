@@ -25,23 +25,32 @@
             color: #222;
             font-weight: bold;
         }
+        #message {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+            display: none;
+            color: #ffcc00;
+        }
     </style>
 </head>
 <body>
     <h1>Connect the Dots: Gemini Symbol</h1>
-    <p>Click the dots in order to reveal the Gemini symbol. Use "Undo" to remove the last connection.</p>
+    <p>Click the dots **in order** to reveal the Gemini symbol. Use "Undo" to remove the last connection.</p>
     <canvas id="gameCanvas" width="500" height="500"></canvas>
     <br>
     <button onclick="undoLast()">Undo Last Move</button>
+    <p id="message">🎉 Congratulations! You've completed the Gemini symbol! 🎉</p>
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
+        const message = document.getElementById("message");
 
         const points = [
             { x: 150, y: 50, num: 1 }, { x: 250, y: 50, num: 2 }, 
-            { x: 100, y: 150, num: 3 }, { x: 300, y: 150, num: 4 },
-            { x: 100, y: 300, num: 5 }, { x: 300, y: 300, num: 6 }, 
-            { x: 150, y: 400, num: 7 }, { x: 250, y: 400, num: 8 }
+            { x: 150, y: 150, num: 3 }, { x: 250, y: 150, num: 4 },
+            { x: 150, y: 250, num: 5 }, { x: 250, y: 250, num: 6 }, 
+            { x: 150, y: 350, num: 7 }, { x: 250, y: 350, num: 8 }
         ];
 
         let clickedPoints = [];
@@ -71,7 +80,7 @@
             ctx.stroke();
 
             if (clickedPoints.length === points.length) {
-                setTimeout(() => alert("Congratulations! You've completed the Gemini symbol!"), 500);
+                message.style.display = "block"; // Show the congratulations message
             }
         }
 
@@ -80,19 +89,21 @@
             const mouseX = event.clientX - rect.left;
             const mouseY = event.clientY - rect.top;
 
-            points.forEach(point => {
-                if (Math.abs(mouseX - point.x) < 10 && Math.abs(mouseY - point.y) < 10) {
-                    if (!clickedPoints.includes(point)) {
-                        clickedPoints.push(point);
-                        drawPoints();
-                    }
+            const nextIndex = clickedPoints.length;
+
+            if (nextIndex < points.length) {
+                const nextPoint = points[nextIndex];
+                if (Math.abs(mouseX - nextPoint.x) < 10 && Math.abs(mouseY - nextPoint.y) < 10) {
+                    clickedPoints.push(nextPoint);
+                    drawPoints();
                 }
-            });
+            }
         });
 
         function undoLast() {
             if (clickedPoints.length > 0) {
                 clickedPoints.pop();
+                message.style.display = "none"; // Hide message if undone
                 drawPoints();
             }
         }
