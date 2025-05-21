@@ -34,7 +34,7 @@
 <body>
   <h1>Connect the Dots: Gemini Symbol</h1>
   <p>
-    Connecting dots mean something
+   Some connections mean something
   </p>
   <canvas id="gameCanvas" width="500" height="500"></canvas>
   <br>
@@ -46,18 +46,24 @@
     const ctx = canvas.getContext("2d");
     
     // Define dot positions.
+    // Dots 1, 2, 7, and 8 are placed on the corners.
+    // Dots 3, 4, 5, and 6 form the central Gemini pattern.
+    // Dots 9 and 10 are extra distractor dots between 1 & 7 and 2 & 8 respectively.
     const points = [
-      { x: 50,  y: 50,  num: 1 },   // Dot 1: top-left
-      { x: 450, y: 50,  num: 2 },    // Dot 2: top-right
-      { x: 200, y: 120, num: 3 },    // Dot 3: mid top-left
-      { x: 300, y: 120, num: 4 },    // Dot 4: mid top-right
-      { x: 200, y: 280, num: 5 },    // Dot 5: mid bottom-left
-      { x: 300, y: 280, num: 6 },    // Dot 6: mid bottom-right
-      { x: 50,  y: 350, num: 7 },    // Dot 7: bottom-left
-      { x: 450, y: 350, num: 8 }     // Dot 8: bottom-right
+      { x: 50,  y: 50,  num: 1 },    // Dot 1: top-left
+      { x: 450, y: 50,  num: 2 },     // Dot 2: top-right
+      { x: 200, y: 120, num: 3 },     // Dot 3: mid top-left
+      { x: 300, y: 120, num: 4 },     // Dot 4: mid top-right
+      { x: 200, y: 280, num: 5 },     // Dot 5: mid bottom-left
+      { x: 300, y: 280, num: 6 },     // Dot 6: mid bottom-right
+      { x: 50,  y: 350, num: 7 },     // Dot 7: bottom-left
+      { x: 450, y: 350, num: 8 },     // Dot 8: bottom-right
+      { x: 50,  y: 200, num: 9 },     // Dot 9: extra on the left between 1 and 7
+      { x: 450, y: 200, num: 10 }     // Dot 10: extra on the right between 2 and 8
     ];
     
-    // The "required" connections (order-insensitive) needed for the Gemini symbol.
+    // The "required" connections (order-insensitive) that form the Gemini symbol.
+    // For example, "1-2" covers both 1→2 and 2→1.
     const requiredConnections = new Set([
       "1-2",
       "2-4",
@@ -72,11 +78,11 @@
     let selectedDotIndex = null;
     const connections = [];
     
-    // Draw the canvas: dots, connection lines, and highlight the selected dot.
+    // Draw the canvas: dots with labels, connection lines, and highlighting for the selected dot.
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Draw connection lines.
+      
+      // Draw each connection line.
       ctx.strokeStyle = "#ffcc00";
       ctx.lineWidth = 3;
       connections.forEach(conn => {
@@ -88,32 +94,33 @@
         ctx.stroke();
       });
       
-      // Draw dots and label them.
+      // Draw each dot, placing a label for its number.
       points.forEach((point, index) => {
         ctx.beginPath();
         if (selectedDotIndex === index) {
           ctx.arc(point.x, point.y, 10, 0, 2 * Math.PI);
-          ctx.fillStyle = "cyan"; // Highlighted dot.
+          ctx.fillStyle = "cyan";  // Highlight selected dot.
         } else {
           ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
           ctx.fillStyle = "white";
         }
         ctx.fill();
-
+        
+        // Label the dot.
         ctx.fillStyle = "white";
         ctx.font = "16px Arial";
         ctx.fillText(point.num, point.x - 10, point.y - 10);
       });
     }
     
-    // Normalize a connection as "min-max" using the dot numbers.
+    // Normalize a connection as "min-max" using the dot numbers, so 1-2 and 2-1 are equivalent.
     function normalizeConnection(fromIndex, toIndex) {
       const a = points[fromIndex].num;
       const b = points[toIndex].num;
       return `${Math.min(a, b)}-${Math.max(a, b)}`;
     }
     
-    // Handle canvas click event.
+    // Handle canvas click: select a dot then connect it to the next clicked dot.
     canvas.addEventListener("click", function(event) {
       const rect = canvas.getBoundingClientRect();
       const clickX = event.clientX - rect.left;
@@ -123,15 +130,15 @@
         const dx = clickX - points[i].x;
         const dy = clickY - points[i].y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance < 10) {  // If click is on/near a dot.
+        if (distance < 10) {  // Click within a dot.
           if (selectedDotIndex === null) {
             selectedDotIndex = i;
           } else {
             if (selectedDotIndex === i) {
-              // Deselect if clicking the same dot.
+              // Deselect if the same dot is clicked.
               selectedDotIndex = null;
             } else {
-              // Create connection if it doesn't already exist.
+              // Add a connection if it doesn't already exist.
               const connStr = normalizeConnection(selectedDotIndex, i);
               const exists = connections.some(conn => normalizeConnection(conn.from, conn.to) === connStr);
               if (!exists) {
@@ -146,7 +153,7 @@
       }
     });
     
-    // Undo the last connection or clear selection.
+    // Remove the last connection drawn or clear the dot selection.
     function undoLast() {
       if (connections.length > 0) {
         connections.pop();
@@ -156,7 +163,7 @@
       draw();
     }
     
-    // When the user clicks "Submit", check if all required connections are present.
+    // When Submit is clicked, check if all required connections are present.
     function submitGame() {
       const drawnConnections = new Set();
       connections.forEach(conn => {
@@ -177,7 +184,7 @@
       }
     }
     
-    // Initial drawing.
+    // Initial draw.
     draw();
   </script>
 </body>
