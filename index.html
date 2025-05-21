@@ -22,55 +22,42 @@
       padding: 10px 15px;
       font-size: 16px;
       margin-top: 10px;
+      margin-right: 10px;
       cursor: pointer;
       border: none;
       background-color: #ffcc00;
       color: #222;
       font-weight: bold;
     }
-    #message {
-      font-size: 20px;
-      font-weight: bold;
-      margin-top: 15px;
-      display: none;
-      color: #ffcc00;
-    }
   </style>
 </head>
 <body>
   <h1>Connect the Dots: Gemini Symbol</h1>
   <p>
-    Click on a dot to select it (it will be highlighted in cyan). Then click on another dot to draw a connection.
-    You may connect dots in any order (1→2 is the same as 2→1).  
-    The correct Gemini shape requires these connections:
-    (1,2), (2,4), (4,6), (6,8), (8,7), (7,5), (5,3), (3,1).
+    Connecting dots mean something
   </p>
   <canvas id="gameCanvas" width="500" height="500"></canvas>
   <br>
   <button onclick="undoLast()">Undo Last Move</button>
-  <p id="message">🎉 Congratulations! You've completed the Gemini symbol! 🎉</p>
+  <button onclick="submitGame()">Submit</button>
   
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
-    const message = document.getElementById("message");
     
     // Define dot positions.
-    // Here, dots 1,2 and 7,8 are placed wider apart horizontally,
-    // while dots 3,4,5,6 are set more centrally.
     const points = [
       { x: 50,  y: 50,  num: 1 },   // Dot 1: top-left
-      { x: 450, y: 50,  num: 2 },   // Dot 2: top-right
-      { x: 200, y: 120, num: 3 },   // Dot 3: mid top-left
-      { x: 300, y: 120, num: 4 },   // Dot 4: mid top-right
-      { x: 200, y: 280, num: 5 },   // Dot 5: mid bottom-left
-      { x: 300, y: 280, num: 6 },   // Dot 6: mid bottom-right
-      { x: 50,  y: 350, num: 7 },   // Dot 7: bottom-left
-      { x: 450, y: 350, num: 8 }    // Dot 8: bottom-right
+      { x: 450, y: 50,  num: 2 },    // Dot 2: top-right
+      { x: 200, y: 120, num: 3 },    // Dot 3: mid top-left
+      { x: 300, y: 120, num: 4 },    // Dot 4: mid top-right
+      { x: 200, y: 280, num: 5 },    // Dot 5: mid bottom-left
+      { x: 300, y: 280, num: 6 },    // Dot 6: mid bottom-right
+      { x: 50,  y: 350, num: 7 },    // Dot 7: bottom-left
+      { x: 450, y: 350, num: 8 }     // Dot 8: bottom-right
     ];
     
-    // The "required" connections (normalized as sorted pairs) that form the Gemini symbol.
-    // Note: e.g., connection (1,2) is stored as "1-2" regardless of click order.
+    // The "required" connections (order-insensitive) needed for the Gemini symbol.
     const requiredConnections = new Set([
       "1-2",
       "2-4",
@@ -82,17 +69,14 @@
       "1-3"
     ]);
     
-    // Global state:
-    // selectedDotIndex holds the index in points[] of a currently selected dot (if any).
-    // connections is an array of objects representing drawn lines.
     let selectedDotIndex = null;
     const connections = [];
     
     // Draw the canvas: dots, connection lines, and highlight the selected dot.
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // Draw each connection line.
+
+      // Draw connection lines.
       ctx.strokeStyle = "#ffcc00";
       ctx.lineWidth = 3;
       connections.forEach(conn => {
@@ -104,25 +88,22 @@
         ctx.stroke();
       });
       
-      // Draw each dot.
+      // Draw dots and label them.
       points.forEach((point, index) => {
         ctx.beginPath();
         if (selectedDotIndex === index) {
           ctx.arc(point.x, point.y, 10, 0, 2 * Math.PI);
-          ctx.fillStyle = "cyan"; // Highlight the selected dot.
+          ctx.fillStyle = "cyan"; // Highlighted dot.
         } else {
           ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
           ctx.fillStyle = "white";
         }
         ctx.fill();
-        
-        // Label the dot with its number.
+
         ctx.fillStyle = "white";
         ctx.font = "16px Arial";
         ctx.fillText(point.num, point.x - 10, point.y - 10);
       });
-      
-      checkCompletion();
     }
     
     // Normalize a connection as "min-max" using the dot numbers.
@@ -132,7 +113,7 @@
       return `${Math.min(a, b)}-${Math.max(a, b)}`;
     }
     
-    // When the canvas is clicked, check if a dot was clicked.
+    // Handle canvas click event.
     canvas.addEventListener("click", function(event) {
       const rect = canvas.getBoundingClientRect();
       const clickX = event.clientX - rect.left;
@@ -142,16 +123,15 @@
         const dx = clickX - points[i].x;
         const dy = clickY - points[i].y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance < 10) {  // If click is close to a dot...
+        if (distance < 10) {  // If click is on/near a dot.
           if (selectedDotIndex === null) {
-            // No dot selected yet; select this dot.
             selectedDotIndex = i;
           } else {
-            // If clicking the same dot, deselect.
             if (selectedDotIndex === i) {
+              // Deselect if clicking the same dot.
               selectedDotIndex = null;
             } else {
-              // Otherwise, add the connection if it doesn't already exist.
+              // Create connection if it doesn't already exist.
               const connStr = normalizeConnection(selectedDotIndex, i);
               const exists = connections.some(conn => normalizeConnection(conn.from, conn.to) === connStr);
               if (!exists) {
@@ -161,12 +141,12 @@
             }
           }
           draw();
-          return; // Stop processing after clicking a valid dot.
+          return;
         }
       }
     });
     
-    // Remove the last connection drawn (or clear the selection if one exists).
+    // Undo the last connection or clear selection.
     function undoLast() {
       if (connections.length > 0) {
         connections.pop();
@@ -176,8 +156,8 @@
       draw();
     }
     
-    // Check whether all required connections are present, regardless of draw order.
-    function checkCompletion() {
+    // When the user clicks "Submit", check if all required connections are present.
+    function submitGame() {
       const drawnConnections = new Set();
       connections.forEach(conn => {
         drawnConnections.add(normalizeConnection(conn.from, conn.to));
@@ -190,10 +170,14 @@
         }
       });
       
-      message.style.display = complete ? "block" : "none";
+      if (complete) {
+        alert("🎉 Congratulations! You've completed the Gemini symbol! 🎉");
+      } else {
+        alert("The Gemini symbol is not complete yet. Keep trying!");
+      }
     }
     
-    // Initial draw of the canvas.
+    // Initial drawing.
     draw();
   </script>
 </body>
